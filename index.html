@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="lava" data-marble>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course Path Optimizer | SDG 4: Quality Education</title>
+<style>
+  /* ---------- Base colours (overridden by the Lava Stone theme below) ---------- */
+  :root{
+    --bg:#f4f6fb; --panel:#fff; --primary:#2f5fd0; --primary-dark:#1e3f91; --text:#1d2433;
+    --muted:#667085; --border:#d6dbe4; --soft:#e9edf5; --line:#eef0f4; --sel:#cfdcfb;
+    --node:#eef3ff; --node-b:#8fa9e8; --done:#dcf5e6; --done-b:#2f9e5b;
+    --hl:#ffe9cc; --hl-b:#e8590c; --on-hl:#fff; --edge:#a7b0c0;
+    --header:#2f5fd0; --on-header:#fff; --on-header-muted:#dbe5ff;
+  }
+  /* ---------- Luxury marble themes (textures drawn in code, see MARBLES) ---------- */
+  [data-theme="lava"]{
+    --bg:#08080a; --panel:rgba(12,12,15,.88); --primary:#e3262f; --primary-dark:#ff5a52; --text:#f3eee8;
+    --muted:#a9a3a0; --border:rgba(207,165,72,.35); --soft:rgba(40,38,44,.75); --line:rgba(255,255,255,.06);
+    --sel:rgba(227,38,47,.28); --node:#17171c; --node-b:#4a4a55; --done:#10291d; --done-b:#2fbf71;
+    --hl:#3a0a0e; --hl-b:#ff2e3a; --on-hl:#fff; --edge:#4c4c58; --glow:1;
+    --accent-bg:linear-gradient(135deg,#9e0d16,#e3262f 55%,#ff5a3c); --bar:linear-gradient(90deg,#a3101a,#ff4a3a);
+    --on-header:#fff; --on-header-muted:#f5d9a8; --header:#120306;
+  }
+  [data-marble] body{background:var(--bg) var(--page-img) center/cover fixed}
+  [data-marble] header{background:var(--header) var(--header-img) center/cover;padding:22px 26px 20px}
+  [data-marble] header h1{font-family:"Cinzel","Trajan Pro","Times New Roman",Georgia,serif;font-size:30px;
+    text-transform:uppercase;letter-spacing:.09em;font-weight:700;
+    background:linear-gradient(180deg,#fff4c9 0%,#e9c66e 42%,#9c6f22 58%,#f2d785 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,.75)) drop-shadow(0 0 1px rgba(0,0,0,.6))}
+  [data-marble] header p{font-family:Georgia,serif;letter-spacing:.06em;font-weight:600;
+    text-shadow:0 1px 3px rgba(0,0,0,.55)}
+  [data-marble] .hbtns button,[data-marble] .hbtns select{background:rgba(10,10,12,.72);color:#ecd08a;
+    border:1px solid rgba(217,180,90,.7);backdrop-filter:blur(2px)}
+  .divider{display:none}
+  [data-marble] .divider{display:block;position:relative;height:4px;
+    background:linear-gradient(90deg,#5e4512,#d9b45a 20%,#fff1bf 50%,#d9b45a 80%,#5e4512);
+    box-shadow:0 0 12px rgba(217,180,90,.55)}
+  [data-marble] .card{backdrop-filter:blur(3px);box-shadow:0 12px 34px rgba(0,0,0,.55)}
+  [data-marble] h2{font-family:Georgia,"Times New Roman",serif;color:var(--primary-dark);letter-spacing:.02em}
+  [data-marble] .tabs button.active{box-shadow:inset 0 -2px 0 var(--hl-b)}
+  [data-marble] button.accent{color:var(--on-accent,#fff);border-color:rgba(217,180,90,.6)}
+  [data-marble] #status{background:rgba(8,8,10,.85);color:#cbbf9f}
+  [data-marble] th{color:var(--primary-dark)}
+  [data-marble] dialog{background:#141217;border:1px solid var(--border)}
+  [data-marble] select option{background:#141217;color:var(--text)}
+  *{box-sizing:border-box}
+  body{transition:background .2s;margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+       background:var(--bg);color:var(--text);font-size:14px}
+  header{background:var(--header);color:var(--on-header);padding:14px 22px;display:flex;
+         align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header h1{margin:0;font-size:22px}
+  header p{margin:2px 0 0;color:var(--on-header-muted);font-size:13px}
+  .hbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .hbtns button,.hbtns select{background:var(--panel);color:var(--primary-dark);font-weight:600;border-color:transparent}
+  button{font:inherit;border:1px solid var(--border);background:var(--panel);color:var(--text);
+         padding:7px 14px;border-radius:7px;cursor:pointer}
+  button:hover{background:var(--soft)}
+  button.accent{background:var(--accent-bg,var(--primary));border-color:var(--primary);color:var(--on-accent,#fff)}
+  button.accent:hover{filter:brightness(1.12)}
+  main{display:grid;grid-template-columns:minmax(430px,1fr) 1.75fr;gap:14px;padding:14px}
+  @media (max-width:1000px){main{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;
+        min-width:0}
+  h2{margin:0 0 2px;font-size:17px}
+  .muted{color:var(--muted);font-size:13px;margin:0 0 10px}
+  .tablewrap{overflow:auto;border:1px solid var(--border);border-radius:8px;max-height:460px}
+  table{border-collapse:collapse;width:100%}
+  th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{background:var(--soft);position:sticky;top:0;font-size:13px;z-index:1}
+  td.num,th.num{text-align:center}
+  tr.done td{background:var(--done)}
+  tr.sel td{background:var(--sel)}
+  #catalogue tbody tr{cursor:pointer}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  .progress{height:10px;background:var(--soft);border-radius:6px;overflow:hidden;margin-top:6px}
+  .progress div{height:100%;background:var(--bar,var(--done-b));width:0;transition:width .3s}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .tabs button{border:none;border-radius:7px 7px 0 0;background:transparent;color:var(--muted);
+               padding:8px 12px}
+  .tabs button.active{background:var(--soft);color:var(--primary-dark);font-weight:600}
+  .tab{display:none}.tab.active{display:block}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  select,input{font:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:6px;
+               background:var(--panel);color:var(--text)}
+  .big{font-size:17px;font-weight:700;color:var(--primary-dark);margin:6px 0 4px}
+  .hltext{color:var(--hl-b);font-weight:600;min-height:20px}
+  #graph{width:100%;border:1px solid var(--border);border-radius:8px;background:var(--panel);
+         overflow:auto}
+  #graph svg{display:block;width:100%;height:auto;min-width:640px}
+  .node{cursor:pointer}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:13px}
+  .sw{display:inline-block;width:14px;height:11px;border:2px solid;border-radius:3px;
+      vertical-align:middle;margin-right:4px}
+  #status{background:var(--soft);color:var(--muted);padding:6px 22px;font-size:13px;
+          position:sticky;bottom:0}
+  .help h3{color:var(--primary-dark);margin:16px 0 4px;font-size:15px}
+  .help p{margin:0 0 6px;line-height:1.5}
+  code{background:var(--soft);padding:1px 5px;border-radius:4px}
+  dialog{background:var(--panel);color:var(--text);border:none;border-radius:12px;padding:20px;width:min(460px,94vw);
+         box-shadow:0 12px 40px rgba(0,0,0,.25)}
+  dialog::backdrop{background:rgba(20,30,50,.35)}
+  .form{display:grid;grid-template-columns:150px 1fr;gap:9px 10px;align-items:center}
+  .form select[multiple]{height:170px}
+  .err{color:#c92a2a;min-height:18px;margin-top:8px;font-size:13px}
+  .pass{color:var(--done-b)} .fail{color:#c92a2a}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Course Path Optimizer</h1>
+    <p>Find the most efficient order to complete courses &nbsp;|&nbsp; SDG 4: Quality Education</p>
+  </div>
+  <div class="hbtns">
+    <button id="btnOpen">Open JSON</button>
+    <button id="btnSave">Save JSON</button>
+    <button id="btnSample">Load sample data</button>
+    <input type="file" id="fileInput" accept=".json,application/json" hidden>
+  </div>
+</header>
+<div class="divider" aria-hidden="true"></div>
+
+<main>
+  <!-- ======================= Catalogue ======================= -->
+  <section class="card">
+    <h2>Course Catalogue</h2>
+    <p class="muted">Click a row to select it (Ctrl/Shift-click for several). Double-click to edit.
+      Tick the box when you finish a course.</p>
+    <div class="tablewrap">
+      <table id="catalogue">
+        <thead><tr><th class="num">Done</th><th>ID</th><th>Course</th><th class="num">Hours</th>
+          <th class="num">Rating</th><th>Prerequisites</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="row">
+      <button class="accent" id="btnAdd">+ Add course</button>
+      <button id="btnEdit">Edit</button>
+      <button id="btnDelete">Delete</button>
+      <button id="btnClear">Clear progress</button>
+    </div>
+    <p class="muted" id="progressText" style="margin:10px 0 0"></p>
+    <div class="progress"><div id="progressBar"></div></div>
+  </section>
+
+  <!-- ======================= Tabs ======================= -->
+  <section class="card">
+    <nav class="tabs" id="tabs">
+      <button data-tab="t-graph" class="active">Graph</button>
+      <button data-tab="t-order">Course Order</button>
+      <button data-tab="t-critical">Fastest Finish</button>
+      <button data-tab="t-goal">Goal Planner</button>
+      <button data-tab="t-route">Route Finder</button>
+      <button data-tab="t-rec">Recommend</button>
+      <button data-tab="t-help">How It Works</button>
+    </nav>
+
+    <div class="tab active" id="t-graph">
+      <h2>Course Dependency Graph (DAG)</h2>
+      <p class="muted">Arrows point from a prerequisite to the course it unlocks. Columns are study
+        levels: courses in the same column can be taken in parallel.</p>
+      <div class="controls" style="justify-content:space-between">
+        <span class="hltext" id="hlText"></span>
+        <button id="btnClearHl">Clear highlight</button>
+      </div>
+      <div id="graph"></div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--node);border-color:var(--node-b)"></i>Not started</span>
+        <span><i class="sw" style="background:var(--done);border-color:var(--done-b)"></i>Completed</span>
+        <span><i class="sw" style="background:var(--hl);border-color:var(--hl-b)"></i>Highlighted result</span>
+        <span>Numbers = suggested step. Click a course for details.</span>
+      </div>
+    </div>
+
+    <div class="tab" id="t-order">
+      <h2>Recommended Course Order (Topological Sort + Min-Heap)</h2>
+      <p class="muted">Every course appears after all its prerequisites. When several courses are
+        available at once, the Min-Heap picks the best one first by the chosen priority.</p>
+      <div class="controls">
+        <label>Priority: <select id="orderPri"></select></label>
+        <label><input type="checkbox" id="orderSkip" checked> Skip completed</label>
+        <button class="accent" id="btnOrder">Generate order</button>
+      </div>
+      <div class="big" id="orderSum"></div>
+      <div class="tablewrap"><table id="orderTable"></table></div>
+    </div>
+
+    <div class="tab" id="t-critical">
+      <h2>Minimum Time to Finish Everything (DP Longest Path)</h2>
+      <p class="muted">finish(course) = duration + max(finish of its prerequisites). The longest chain,
+        called the critical path, is the shortest possible time to complete all courses when
+        independent courses are studied in parallel.</p>
+      <div class="controls"><button class="accent" id="btnCritical">Compute critical path</button></div>
+      <div class="big" id="critSum"></div>
+      <p id="critPath" style="font-size:15px"></p>
+      <div class="tablewrap"><table id="levelTable"></table></div>
+    </div>
+
+    <div class="tab" id="t-goal">
+      <h2>Plan the Path to a Target Course</h2>
+      <p class="muted">Only the prerequisites you still need are included, ordered with Topological
+        Sort and the Min-Heap.</p>
+      <div class="controls">
+        <label>Goal: <select id="goalSel"></select></label>
+        <label>Priority: <select id="goalPri"></select></label>
+        <label><input type="checkbox" id="goalSkip" checked> Skip completed</label>
+        <button class="accent" id="btnGoal">Plan</button>
+      </div>
+      <div class="big" id="goalSum"></div>
+      <p class="muted" id="goalSub"></p>
+      <div class="tablewrap"><table id="goalTable"></table></div>
+    </div>
+
+    <div class="tab" id="t-route">
+      <h2>Shortest or Longest Route Between Two Courses (DP)</h2>
+      <p class="muted">dist(next) = min/max(dist(current) + duration(next)), processed in topological
+        order. Hours include both the start and the end course.</p>
+      <div class="controls">
+        <label>From: <select id="routeFrom"></select></label>
+        <label>To: <select id="routeTo"></select></label>
+        <label>Mode: <select id="routeMode"><option>shortest</option><option>longest</option></select></label>
+        <button class="accent" id="btnRoute">Find route</button>
+      </div>
+      <div class="big" id="routeSum"></div>
+      <div class="tablewrap"><table id="routeTable"></table></div>
+    </div>
+
+    <div class="tab" id="t-rec">
+      <h2>What Should I Take Next? (Min-Heap Top-K)</h2>
+      <p class="muted">Courses whose prerequisites are all completed (tick them in the catalogue),
+        ranked by a Min-Heap on the chosen priority.</p>
+      <div class="controls">
+        <label>How many: <input type="number" id="recK" value="3" min="1" max="50" style="width:64px"></label>
+        <label>Priority: <select id="recPri"></select></label>
+        <button class="accent" id="btnRec">Recommend</button>
+      </div>
+      <div class="big" id="recSum"></div>
+      <div class="tablewrap"><table id="recTable"></table></div>
+    </div>
+
+    <div class="tab help" id="t-help">
+      <h2>How the Optimizer Works</h2>
+      <h3>1. Courses as a Directed Acyclic Graph (DAG)</h3>
+      <p>Each course is a node. An edge A &rarr; B means A is a prerequisite of B. Before a
+        prerequisite is added, the app checks whether B can already reach A. If it can, the link
+        would create a cycle that can never be completed, so it is rejected.</p>
+      <h3>2. Topological Sorting (Kahn's algorithm): O((V+E) log V)</h3>
+      <p>The algorithm repeatedly takes a course whose prerequisites are all done, then unlocks the courses
+        that depend on it. The result is always a valid order.</p>
+      <h3>3. Min-Heap for prioritisation: push/pop O(log n)</h3>
+      <p>A hand-written binary min-heap holds the courses that are available right now. Kahn's
+        algorithm pops the best one: highest rating, highest popularity, or shortest duration.
+        Values where higher is better are negated, because it is a <b>min</b>-heap. The same heap powers
+        <i>Recommend</i>.</p>
+      <h3>4. Dynamic Programming on the DAG: O(V+E)</h3>
+      <p>Courses are processed in topological order, so every prerequisite is solved before the course itself.<br>
+        &bull; <b>Longest path:</b> <code>finish(v) = duration(v) + max(finish(prereqs))</code> gives
+        the minimum time to finish everything when courses are taken in parallel.<br>
+        &bull; <b>Shortest path:</b> <code>dist(w) = min(dist(v) + duration(w))</code> gives the quickest
+        route between two courses.</p>
+      <h3>Why this minimises total time</h3>
+      <p>Taking courses one at a time, every valid order adds up to the same number of hours. Time is saved
+        by (a) taking only the prerequisites needed for your goal (Goal Planner) and (b) studying
+        independent courses in parallel (Fastest Finish).</p>
+      <h3>Self-test</h3>
+      <p><button class="accent" id="btnTest">Run self-test</button></p>
+      <div id="testOut"></div>
+    </div>
+  </section>
+</main>
+
+<div id="status">Ready.</div>
+
+<!-- ======================= Add / edit dialog ======================= -->
+<dialog id="dlg">
+  <form method="dialog" id="dlgForm">
+    <h2 id="dlgTitle" style="margin-bottom:14px">Add course</h2>
+    <div class="form">
+      <label for="fId">Course ID</label><input id="fId" required>
+      <label for="fName">Course name</label><input id="fName" required>
+      <label for="fDur">Duration (hours)</label><input id="fDur" type="number" min="0.1" step="any" required>
+      <label for="fRating">Rating (0-5)</label><input id="fRating" type="number" min="0" max="5" step="0.1" value="4">
+      <label for="fPop">Popularity (learners)</label><input id="fPop" type="number" min="0" step="1" value="0">
+      <label for="fPre">Prerequisites<br><small class="muted">Ctrl/Cmd-click for several</small></label>
+      <select id="fPre" multiple></select>
+    </div>
+    <div class="err" id="dlgErr"></div>
+    <div class="row" style="justify-content:flex-end">
+      <button type="button" id="dlgCancel">Cancel</button>
+      <button type="submit" class="accent" id="dlgOk">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+/* =====================================================================
+   CORE ALGORITHMS
+   ===================================================================== */
+
+/** Compare two arrays lexicographically (numbers or strings). */
+function cmpTuple(a, b) {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i] < b[i]) return -1;
+    if (a[i] > b[i]) return 1;
+  }
+  return a.length - b.length;
+}
+
+/** Binary Min-Heap, written from scratch. Ties broken by insertion order. */
+class MinHeap {
+  constructor(key = x => [x], items = []) {
+    this.key = key; this.a = []; this.counter = 0;
+    for (const it of items) this.a.push([key(it), this.counter++, it]);
+    for (let i = (this.a.length >> 1) - 1; i >= 0; i--) this._down(i);   // O(n) heapify
+  }
+  get size() { return this.a.length; }
+  push(item) { this.a.push([this.key(item), this.counter++, item]); this._up(this.a.length - 1); }
+  peek() { if (!this.a.length) throw new Error("peek at empty heap"); return this.a[0][2]; }
+  pop() {
+    if (!this.a.length) throw new Error("pop from empty heap");
+    this._swap(0, this.a.length - 1);
+    const item = this.a.pop()[2];
+    if (this.a.length) this._down(0);
+    return item;
+  }
+  _less(i, j) {
+    const c = cmpTuple(this.a[i][0], this.a[j][0]);
+    return c < 0 || (c === 0 && this.a[i][1] < this.a[j][1]);
+  }
+  _swap(i, j) { [this.a[i], this.a[j]] = [this.a[j], this.a[i]]; }
+  _up(i) {
+    while (i > 0) { const p = (i - 1) >> 1; if (this._less(i, p)) { this._swap(i, p); i = p; } else break; }
+  }
+  _down(i) {
+    const n = this.a.length;
+    for (;;) {
+      const l = 2 * i + 1, r = l + 1; let s = i;
+      if (l < n && this._less(l, s)) s = l;
+      if (r < n && this._less(r, s)) s = r;
+      if (s === i) return;
+      this._swap(i, s); i = s;
+    }
+  }
+}
+
+/* The heap is a MIN-heap, so "higher is better" values are negated. */
+const PRIORITIES = {
+  rating:     c => [-c.rating, -c.popularity, c.id],
+  popularity: c => [-c.popularity, -c.rating, c.id],
+  duration:   c => [c.duration, -c.rating, c.id],
+  id:         c => [c.id],
+};
+
+class CycleError extends Error {}
+
+class CourseGraph {
+  /** courses: [{id, name, duration, rating, popularity, prerequisites:[ids]}] */
+  constructor(courses = []) {
+    this.courses = new Map(); this.adj = new Map(); this.radj = new Map();
+    for (const c of courses) this.addCourse(c);
+    for (const c of courses) for (const p of c.prerequisites || []) this.addPrerequisite(p, c.id);
+  }
+  addCourse(c) {
+    if (this.courses.has(c.id)) throw new Error(`Duplicate course id: ${c.id}`);
+    if (!(c.duration >= 0)) throw new Error(`Duration must be non-negative: ${c.id}`);
+    this.courses.set(c.id, { id: c.id, name: c.name, duration: +c.duration,
+      rating: +(c.rating || 0), popularity: +(c.popularity || 0) });
+    this.adj.set(c.id, []); this.radj.set(c.id, []);
+  }
+  /** Edge prereq -> course; rejected if it would create a cycle. */
+  addPrerequisite(pre, cid) {
+    for (const x of [pre, cid]) if (!this.courses.has(x)) throw new Error(`Unknown course id: ${x}`);
+    if (pre === cid || this._reachable(cid, pre))
+      throw new CycleError(`Making ${pre} a prerequisite of ${cid} would create a cycle`);
+    if (!this.adj.get(pre).includes(cid)) { this.adj.get(pre).push(cid); this.radj.get(cid).push(pre); }
+  }
+  _reachable(start, target) {
+    const stack = [start], seen = new Set([start]);
+    while (stack.length) {
+      const n = stack.pop(); if (n === target) return true;
+      for (const m of this.adj.get(n)) if (!seen.has(m)) { seen.add(m); stack.push(m); }
+    }
+    return false;
+  }
+  ids() { return [...this.courses.keys()]; }
+
+  /** 1. Kahn's topological sort with a Min-Heap instead of a queue. O((V+E) log V) */
+  topoSort(priority = "rating", subset = null) {
+    const nodes = new Set(subset || this.ids());
+    const indeg = new Map();
+    for (const n of nodes) indeg.set(n, this.radj.get(n).filter(p => nodes.has(p)).length);
+    const heap = new MinHeap(PRIORITIES[priority],
+      [...nodes].filter(n => indeg.get(n) === 0).map(n => this.courses.get(n)));
+    const order = [];
+    while (heap.size) {
+      const c = heap.pop(); order.push(c.id);
+      for (const nx of this.adj.get(c.id)) if (nodes.has(nx)) {
+        indeg.set(nx, indeg.get(nx) - 1);
+        if (indeg.get(nx) === 0) heap.push(this.courses.get(nx));
+      }
+    }
+    if (order.length !== nodes.size) throw new CycleError("Course graph contains a cycle");
+    return order;
+  }
+
+  /** 2a. DP longest path: finish[v] = duration[v] + max(finish[prereqs]). O(V+E) */
+  criticalPath() {
+    const finish = new Map(), parent = new Map();
+    for (const v of this.topoSort("id")) {
+      let best = null, t = 0;
+      for (const p of this.radj.get(v)) if (finish.get(p) > t) { t = finish.get(p); best = p; }
+      finish.set(v, t + this.courses.get(v).duration); parent.set(v, best);
+    }
+    if (!finish.size) return { length: 0, path: [], finish };
+    let end = null;
+    for (const [n, f] of finish) if (end === null || f > finish.get(end) || (f === finish.get(end) && n > end)) end = n;
+    return { length: finish.get(end), path: this._rebuild(parent, end), finish };
+  }
+
+  /** 2b. DP shortest/longest weighted path between two courses. O(V+E) */
+  pathBetween(src, dst, mode = "shortest") {
+    const better = mode === "shortest" ? (a, b) => a < b : (a, b) => a > b;
+    const dist = new Map([[src, this.courses.get(src).duration]]), parent = new Map([[src, null]]);
+    for (const v of this.topoSort("id")) {
+      if (!dist.has(v)) continue;
+      for (const w of this.adj.get(v)) {
+        const cand = dist.get(v) + this.courses.get(w).duration;
+        if (!dist.has(w) || better(cand, dist.get(w))) { dist.set(w, cand); parent.set(w, v); }
+      }
+    }
+    if (!dist.has(dst)) return { cost: Infinity, path: [] };
+    return { cost: dist.get(dst), path: this._rebuild(parent, dst) };
+  }
+
+  ancestors(cid) {
+    const seen = new Set(), stack = [...this.radj.get(cid)];
+    while (stack.length) { const p = stack.pop(); if (!seen.has(p)) { seen.add(p); stack.push(...this.radj.get(p)); } }
+    return seen;
+  }
+
+  /** Only the courses still needed for the goal, ordered by topo sort + heap. */
+  planForGoal(goal, priority = "rating", completed = new Set()) {
+    const all = new Set([...this.ancestors(goal), goal]);
+    const needed = new Set([...all].filter(c => !completed.has(c)));
+    const order = this.topoSort(priority, needed);
+    const finish = new Map();
+    for (const v of order) {
+      const prev = this.radj.get(v).filter(p => needed.has(p)).map(p => finish.get(p));
+      finish.set(v, Math.max(0, ...prev) + this.courses.get(v).duration);
+    }
+    return { order,
+      sequential: order.reduce((s, c) => s + this.courses.get(c).duration, 0),
+      parallel: finish.get(goal) || 0,
+      skipped: [...all].filter(c => completed.has(c)).sort() };
+  }
+
+  /** 3. Top-k available courses via the Min-Heap. */
+  recommendNext(completed, k = 3, priority = "rating") {
+    const avail = this.ids().filter(id => !completed.has(id) && this.radj.get(id).every(p => completed.has(p)))
+      .map(id => this.courses.get(id));
+    const heap = new MinHeap(PRIORITIES[priority], avail), out = [];
+    while (heap.size && out.length < k) out.push(heap.pop());
+    return out;
+  }
+
+  /** Group courses into levels; each level can be taken in parallel. */
+  studyLevels() {
+    const level = new Map();
+    for (const v of this.topoSort("id"))
+      level.set(v, 1 + Math.max(-1, ...this.radj.get(v).map(p => level.get(p))));
+    const out = [];
+    for (const [v, l] of level) (out[l] = out[l] || []).push(v);
+    return out.map(g => g.sort());
+  }
+
+  toJSON() {
+    return { courses: [...this.courses.values()].map(c => ({ id: c.id, name: c.name,
+      duration: c.duration, rating: c.rating, popularity: c.popularity,
+      prerequisites: [...this.radj.get(c.id)] })) };
+  }
+  _rebuild(parent, end) { const p = []; for (let n = end; n !== null; n = parent.get(n)) p.push(n); return p.reverse(); }
+}
+
+/* =====================================================================
+   MARBLE TEXTURES - generated as SVG (fractal noise + contour veins),
+   so no image files are needed and everything works offline.
+   ===================================================================== */
+function marble({ base = ["#111", "#222"], cloud = "#fff", cloudOp = .08, layers = [], angle = -28, seed = 3, w = 1600, h = 900, glow = false }) {
+  let defs = `<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${base[0]}"/><stop offset="1" stop-color="${base[1]}"/></linearGradient>
+  <filter id="c" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.0025 0.006" numOctaves="4" seed="${seed}"/>
+  <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 0 0 -0.55"/><feComposite in="SourceGraphic" operator="in"/></filter>`;
+  let body = `<rect width="100%" height="100%" fill="url(#g)"/>
+  <g transform="rotate(${angle} ${w/2} ${h/2})"><rect x="${-w}" y="${-h}" width="${3*w}" height="${3*h}" fill="${cloud}" opacity="${cloudOp}" filter="url(#c)"/></g>`;
+  layers.forEach((L, i) => {
+    const n = L.n || 60, t = Array(n).fill(0); const at = Math.round(L.at * n);
+    for (let k = 0; k < L.width; k++) t[Math.min(n - 1, at + k)] = 1;
+    defs += `<filter id="v${i}" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="${L.freq || "0.0013 0.0042"}" numOctaves="${L.oct || 6}" seed="${L.seed}"/>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0"/>
+      <feComponentTransfer><feFuncA type="table" tableValues="${t.join(" ")}"/></feComponentTransfer>
+      ${L.blur ? `<feGaussianBlur stdDeviation="${L.blur}"/>` : ""}
+      <feComposite in="SourceGraphic" operator="in"/></filter>`;
+    body += `<g transform="rotate(${angle} ${w/2} ${h/2})"><rect x="${-w}" y="${-h}" width="${3*w}" height="${3*h}" fill="${L.color}" opacity="${L.op ?? 1}" filter="url(#v${i})"/></g>`;
+  });
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice"><defs>${defs}</defs>${body}</svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+const MARBLE_DEFS = () => ({
+  lava: marble({ base: ["#16050a", "#070205"], cloud: "#8a0a14", cloudOp: .55, seed: 5, layers: [
+    { color: "#ff1a2a", at: .45, width: 2, seed: 8, blur: 5, op: .75 },
+    { color: "#ff4a3a", at: .45, width: 1, seed: 8, op: 1 },
+    { color: "#c4101b", at: .6, width: 1, seed: 17, op: .75 },
+    { color: "#ff2a35", at: .52, width: 1, seed: 29, blur: 3, op: .5 }] }),
+  stone: marble({ base: ["#16171b", "#09090b"], cloud: "#c8cad2", cloudOp: .08, seed: 31, layers: [
+    { color: "#a6a8b2", at: .5, width: 1, seed: 19, op: .22 },
+    { color: "#6a6c75", at: .35, width: 1, seed: 23, op: .3 }] }),
+});
+let MARBLES = null;
+const MARBLE_THEMES = { lava: ["lava", "stone"] };
+
+/* =====================================================================
+   SAMPLE DATA
+   ===================================================================== */
+const SAMPLE = [
+  ["CS101", "Intro to Programming", 30, 4.7, 15200, []],
+  ["MATH101", "Discrete Mathematics", 25, 4.2, 8100, []],
+  ["MATH102", "Linear Algebra", 28, 4.4, 7600, []],
+  ["CS102", "Object-Oriented Programming", 20, 4.5, 11000, ["CS101"]],
+  ["CS201", "Data Structures", 35, 4.8, 12500, ["CS102", "MATH101"]],
+  ["CS202", "Algorithms", 40, 4.6, 9800, ["CS201"]],
+  ["STAT201", "Probability & Statistics", 26, 4.1, 6900, ["MATH101"]],
+  ["DB201", "Databases", 22, 4.3, 8800, ["CS102"]],
+  ["WEB201", "Web Development", 24, 4.6, 14000, ["CS102"]],
+  ["ML301", "Machine Learning", 45, 4.9, 13300, ["CS202", "STAT201", "MATH102"]],
+  ["DL401", "Deep Learning", 50, 4.8, 10100, ["ML301"]],
+  ["SE301", "Software Engineering", 18, 4.0, 5400, ["DB201", "WEB201"]],
+  ["CAP401", "Capstone Project", 60, 4.7, 4200, ["SE301", "CS202"]],
+].map(([id, name, duration, rating, popularity, prerequisites]) =>
+  ({ id, name, duration, rating, popularity, prerequisites }));
+
+/* =====================================================================
+   APP STATE + PERSISTENCE (browser storage, if available)
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, ch =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+const fmt = n => (Math.round(n * 10) / 10).toLocaleString();
+
+let graph = new CourseGraph(SAMPLE);
+let completed = new Set();
+let selected = new Set();
+let hl = { nodes: new Set(), edges: new Set(), badges: new Map(), text: "" };
+
+function persist() {
+  try { localStorage.setItem("cpo-state", JSON.stringify({ ...graph.toJSON(), completed: [...completed] })); }
+  catch (e) { /* storage unavailable - app still works */ }
+}
+function restore() {
+  try {
+    const raw = localStorage.getItem("cpo-state"); if (!raw) return;
+    const st = JSON.parse(raw);
+    graph = new CourseGraph(st.courses);
+    completed = new Set((st.completed || []).filter(id => graph.courses.has(id)));
+  } catch (e) { graph = new CourseGraph(SAMPLE); completed = new Set(); }
+}
+const setStatus = t => { $("status").textContent = t; };
+
+function courseListFromGraph() {
+  return graph.toJSON().courses;
+}
+function applyCourses(list, okMsg) {
+  try { graph = new CourseGraph(list); }
+  catch (e) { alert("Cannot save change:\n" + e.message); return false; }
+  completed = new Set([...completed].filter(id => graph.courses.has(id)));
+  selected = new Set([...selected].filter(id => graph.courses.has(id)));
+  clearHighlight(false); refreshAll(); persist(); setStatus(okMsg); return true;
+}
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+function refreshAll() {
+  // catalogue
+  const tb = $("catalogue").querySelector("tbody");
+  tb.innerHTML = graph.topoSort("id").map(id => {
+    const c = graph.courses.get(id), done = completed.has(id);
+    const cls = [done ? "done" : "", selected.has(id) ? "sel" : ""].join(" ");
+    return `<tr data-id="${esc(id)}" class="${cls}">
+      <td class="num"><input type="checkbox" data-done="${esc(id)}" ${done ? "checked" : ""}></td>
+      <td><b>${esc(id)}</b></td><td>${esc(c.name)}</td><td class="num">${fmt(c.duration)}</td>
+      <td class="num">${c.rating.toFixed(1)}</td><td>${esc(graph.radj.get(id).join(", ") || "-")}</td></tr>`;
+  }).join("");
+  // progress
+  const total = [...graph.courses.values()].reduce((s, c) => s + c.duration, 0);
+  const doneH = [...completed].reduce((s, id) => s + graph.courses.get(id).duration, 0);
+  $("progressText").textContent =
+    `Progress: ${completed.size} of ${graph.courses.size} courses completed (${fmt(doneH)} of ${fmt(total)} hours)`;
+  $("progressBar").style.width = total ? (100 * doneH / total) + "%" : "0";
+  // dropdowns
+  const opts = [...graph.ids()].sort().map(id =>
+    `<option value="${esc(id)}">${esc(id)} - ${esc(graph.courses.get(id).name)}</option>`).join("");
+  for (const sel of ["goalSel", "routeFrom", "routeTo"]) {
+    const cur = $(sel).value; $(sel).innerHTML = opts;
+    if (graph.courses.has(cur)) $(sel).value = cur;
+  }
+  if (!graph.courses.has($("goalSel").dataset.init || "") && graph.courses.size) {
+    const last = graph.topoSort("id").at(-1); $("goalSel").value = last; $("goalSel").dataset.init = last;
+  }
+  if (!$("routeTo").dataset.init && graph.courses.has("CAP401")) {
+    $("routeTo").value = "CAP401"; $("routeTo").dataset.init = "1";
+  }
+  drawGraph();
+}
+
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue("--" + n).trim();
+
+function drawGraph() {
+  const box = $("graph");
+  const K = { text: cssVar("text"), muted: cssVar("muted"), edge: cssVar("edge"), hl: cssVar("hl"),
+    hlB: cssVar("hl-b"), onHl: cssVar("on-hl"), done: cssVar("done"), doneB: cssVar("done-b"),
+    node: cssVar("node"), nodeB: cssVar("node-b"), panel: cssVar("panel"), glow: cssVar("glow") === "1" };
+  if (!graph.courses.size) {
+    box.innerHTML = `<p class="muted" style="padding:30px">No courses yet. Click "+ Add course".</p>`; return;
+  }
+  const W = 180, H = 70, GX = 50, GY = 20, M = 18, TOP = 40;
+  const rank = new Map(), cols = [];
+  graph.studyLevels().forEach((level, li) => {
+    if (li) level = [...level].sort((a, b) => {               // barycentre ordering
+      const bc = n => { const p = graph.radj.get(n); return p.reduce((s, x) => s + rank.get(x), 0) / Math.max(1, p.length); };
+      return bc(a) - bc(b) || (a < b ? -1 : 1);
+    });
+    level.forEach((n, i) => rank.set(n, i)); cols.push(level);
+  });
+  const rows = Math.max(...cols.map(c => c.length));
+  const width = 2 * M + cols.length * W + (cols.length - 1) * GX;
+  const height = TOP + rows * H + (rows - 1) * GY + M;
+  const pos = new Map();
+  let s = "";
+  cols.forEach((level, li) => {
+    const x = M + li * (W + GX), off = (rows - level.length) * (H + GY) / 2;
+    s += `<text x="${x + W / 2}" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="${K.muted}">Level ${li + 1}</text>`;
+    level.forEach((n, i) => pos.set(n, [x, TOP + off + i * (H + GY)]));
+  });
+  let edges = "", hlEdges = "";
+  for (const [u, vs] of graph.adj) for (const v of vs) {
+    const on = hl.edges.has(u + ">" + v);
+    const [x1, y1] = [pos.get(u)[0] + W, pos.get(u)[1] + H / 2], [x2, y2] = [pos.get(v)[0], pos.get(v)[1] + H / 2];
+    const mx = (x1 + x2) / 2;
+    const path = `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2 - 2},${y2}" fill="none"
+      stroke="${on ? K.hlB : K.edge}" stroke-width="${on ? 3 : 1.4}" marker-end="url(#${on ? "ah2" : "ah"})"/>`;
+    if (on) hlEdges += path; else edges += path;
+  }
+  let nodes = "";
+  for (const [n, [x, y]] of pos) {
+    const c = graph.courses.get(n), on = hl.nodes.has(n), done = completed.has(n);
+    const [fill, stroke] = on ? [K.hl, K.hlB] : done ? [K.done, K.doneB] : [K.node, K.nodeB];
+    const name = c.name.length > 21 ? c.name.slice(0, 20) + "…" : c.name;
+    nodes += `<g class="node" data-node="${esc(n)}"><title>${esc(n)} - ${esc(c.name)}</title>
+      <rect x="${x}" y="${y}" width="${W}" height="${H}" rx="10" fill="${fill}" ${on && K.glow ? 'filter="url(#glow)"' : ""} stroke="${stroke}" stroke-width="${on ? 2.5 : 1.5}"/>
+      <text x="${x + 11}" y="${y + 21}" font-size="16" font-weight="700" fill="${K.text}">${esc(n)}${done ? " ✔" : ""}</text>
+      <text x="${x + 11}" y="${y + 41}" font-size="14" fill="${K.text}">${esc(name)}</text>
+      <text x="${x + 11}" y="${y + 60}" font-size="13" fill="${K.muted}">${fmt(c.duration)} h   ★ ${c.rating.toFixed(1)}</text>
+      ${hl.badges.has(n) ? `<circle cx="${x + W - 4}" cy="${y + 4}" r="13" fill="${K.hlB}" stroke="${K.panel}" stroke-width="2"/>
+      <text x="${x + W - 4}" y="${y + 8}" text-anchor="middle" font-size="13" font-weight="700" fill="${K.onHl}">${hl.badges.get(n)}</text>` : ""}
+    </g>`;
+  }
+  box.innerHTML = `<svg viewBox="0 -8 ${width} ${height + 8}" xmlns="http://www.w3.org/2000/svg"
+      font-family="Segoe UI, system-ui, sans-serif">
+    <defs>
+      <filter id="glow" x="-30%" y="-40%" width="160%" height="180%">
+        <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="${K.hlB}" flood-opacity=".55"/></filter>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${K.edge}"/></marker>
+      <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${K.hlB}"/></marker>
+    </defs>${s}${edges}${hlEdges}${nodes}</svg>`;
+  $("hlText").textContent = hl.text;
+}
+
+function setHighlight(text, { nodes = [], path = [], badges = [], within = false } = {}) {
+  const set = new Set([...nodes, ...path]);
+  const edges = new Set();
+  for (let i = 0; i + 1 < path.length; i++) edges.add(path[i] + ">" + path[i + 1]);
+  if (within) for (const u of set) for (const v of graph.adj.get(u)) if (set.has(v)) edges.add(u + ">" + v);
+  hl = { nodes: set, edges, badges: new Map(badges.map((b, i) => [b, i + 1])), text };
+  drawGraph();
+}
+function clearHighlight(redraw = true) {
+  hl = { nodes: new Set(), edges: new Set(), badges: new Map(), text: "" };
+  if (redraw) drawGraph();
+}
+
+function fillTable(id, headers, rows) {
+  $(id).innerHTML = `<thead><tr>${headers.map(h => `<th class="${h[1] || ""}">${h[0]}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r => `<tr class="${completed.has(r.id) ? "done" : ""}">${r.cells.map((c, i) =>
+      `<td class="${headers[i][1] || ""}">${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+function rowsWithTotal(ids, extra = () => []) {
+  let cum = 0;
+  return ids.map((id, i) => { const c = graph.courses.get(id); cum += c.duration;
+    return { id, cells: [i + 1, id, c.name, fmt(c.duration), ...extra(c), fmt(cum)] }; });
+}
+
+/* =====================================================================
+   FEATURE HANDLERS
+   ===================================================================== */
+function runOrder() {
+  const pri = $("orderPri").value;
+  const subset = graph.ids().filter(id => !($("orderSkip").checked && completed.has(id)));
+  const order = graph.topoSort(pri, subset);
+  fillTable("orderTable", [["Step", "num"], ["ID"], ["Course"], ["Hours", "num"], ["Rating", "num"],
+    ["Learners", "num"], ["Total (h)", "num"]],
+    rowsWithTotal(order, c => [c.rating.toFixed(1), c.popularity.toLocaleString()]));
+  const total = order.reduce((s, id) => s + graph.courses.get(id).duration, 0);
+  $("orderSum").textContent = `${order.length} courses  |  ${fmt(total)} hours if taken one at a time`;
+  setHighlight(`Course order by ${pri} (numbers show the sequence)`, { badges: order });
+  setStatus(`Topological order generated with Min-Heap priority "${pri}".`);
+}
+
+function runCritical() {
+  const { length, path, finish } = graph.criticalPath();
+  const total = [...graph.courses.values()].reduce((s, c) => s + c.duration, 0);
+  const saved = total ? Math.round(100 * (1 - length / total)) : 0;
+  $("critSum").textContent = `${fmt(length)} hours with parallel study  vs  ${fmt(total)} hours one at a time (${saved}% faster)`;
+  $("critPath").innerHTML = "<b>Critical path:</b> " + path.map(esc).join(" &rarr; ");
+  fillTable("levelTable", [["Level", "num"], ["Courses that can be taken together"], ["Done by (h)", "num"]],
+    graph.studyLevels().map((lv, i) => ({ id: "", cells: [i + 1, lv.join(", "),
+      fmt(Math.max(...lv.map(c => finish.get(c))))] })));
+  setHighlight(`Critical path: ${fmt(length)} h`, { path });
+  setStatus("Critical path computed with Dynamic Programming (longest path in a DAG).");
+}
+
+function runGoal() {
+  const goal = $("goalSel").value; if (!goal) return;
+  const plan = graph.planForGoal(goal, $("goalPri").value, $("goalSkip").checked ? completed : new Set());
+  fillTable("goalTable", [["Step", "num"], ["ID"], ["Course"], ["Hours", "num"], ["Rating", "num"], ["Total (h)", "num"]],
+    rowsWithTotal(plan.order, c => [c.rating.toFixed(1)]));
+  if (!plan.order.length) { $("goalSum").textContent = `You have already completed ${goal}!`; $("goalSub").textContent = ""; }
+  else {
+    $("goalSum").textContent = `${plan.order.length} courses to reach ${goal}  |  ${fmt(plan.sequential)} h one at a time  |  ${fmt(plan.parallel)} h with parallel study`;
+    const notNeeded = graph.courses.size - plan.order.length - plan.skipped.length;
+    $("goalSub").textContent = (plan.skipped.length ? `Skipped (already completed): ${plan.skipped.join(", ")}.  ` : "") +
+      `${notNeeded} unrelated courses are not required.`;
+  }
+  setHighlight(`Plan for ${goal}`, { nodes: plan.order, badges: plan.order, within: true });
+  setStatus(`Plan for ${goal} generated.`);
+}
+
+function runRoute() {
+  const src = $("routeFrom").value, dst = $("routeTo").value, mode = $("routeMode").value;
+  const { cost, path } = graph.pathBetween(src, dst, mode);
+  if (!path.length) {
+    fillTable("routeTable", [], []);
+    $("routeSum").textContent = `No route: ${dst} does not depend on ${src}.`; clearHighlight(); return;
+  }
+  fillTable("routeTable", [["Step", "num"], ["ID"], ["Course"], ["Hours", "num"], ["Total (h)", "num"]], rowsWithTotal(path));
+  $("routeSum").textContent = `${mode[0].toUpperCase() + mode.slice(1)} route: ${path.length} courses, ${fmt(cost)} hours`;
+  setHighlight(`${mode} route ${src} → ${dst}: ${fmt(cost)} h`, { path });
+  setStatus(`${mode} path found with Dynamic Programming.`);
+}
+
+function runRec() {
+  const k = Math.max(1, parseInt($("recK").value) || 3), pri = $("recPri").value;
+  const recs = graph.recommendNext(completed, k, pri);
+  fillTable("recTable", [["Rank", "num"], ["ID"], ["Course"], ["Rating", "num"], ["Learners", "num"], ["Hours", "num"]],
+    recs.map((c, i) => ({ id: c.id, cells: [i + 1, c.id, c.name, c.rating.toFixed(1), c.popularity.toLocaleString(), fmt(c.duration)] })));
+  $("recSum").textContent = recs.length ? `Top ${recs.length} courses you can start now (by ${pri})`
+    : completed.size === graph.courses.size ? "Congratulations, every course is completed!" : "No courses available.";
+  const ids = recs.map(c => c.id);
+  setHighlight(`Recommended next (by ${pri})`, { nodes: ids, badges: ids });
+  setStatus("Recommendations ranked with the Min-Heap.");
+}
+
+/* =====================================================================
+   EDITING (dialog)
+   ===================================================================== */
+let editing = null;
+function openDialog(id = null) {
+  editing = id;
+  const c = id ? graph.courses.get(id) : null;
+  $("dlgTitle").textContent = id ? `Edit ${id}` : "Add course";
+  $("fId").value = c ? c.id : ""; $("fId").disabled = !!c;
+  $("fName").value = c ? c.name : ""; $("fDur").value = c ? c.duration : "";
+  $("fRating").value = c ? c.rating : 4; $("fPop").value = c ? c.popularity : 0;
+  const pre = new Set(c ? graph.radj.get(id) : []);
+  $("fPre").innerHTML = graph.ids().filter(x => x !== id).sort().map(x =>
+    `<option value="${esc(x)}" ${pre.has(x) ? "selected" : ""}>${esc(x)} - ${esc(graph.courses.get(x).name)}</option>`).join("");
+  $("dlgErr").textContent = "";
+  $("dlg").showModal();
+  (id ? $("fName") : $("fId")).focus();
+}
+$("dlgForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const id = $("fId").value.trim().toUpperCase(), name = $("fName").value.trim();
+  const duration = parseFloat($("fDur").value), rating = parseFloat($("fRating").value || 0),
+        popularity = parseInt($("fPop").value || 0);
+  const err = !id || !name ? "Course ID and name are required."
+    : /\s/.test(id) ? "Course ID cannot contain spaces."
+    : !(duration > 0) ? "Duration must be greater than 0."
+    : !(rating >= 0 && rating <= 5) ? "Rating must be between 0 and 5."
+    : !(popularity >= 0) ? "Popularity cannot be negative."
+    : !editing && graph.courses.has(id) ? `${id} already exists.` : "";
+  if (err) { $("dlgErr").textContent = err; return; }
+  const prerequisites = [...$("fPre").selectedOptions].map(o => o.value);
+  const course = { id, name, duration, rating, popularity, prerequisites };
+  const list = courseListFromGraph();
+  const next = editing ? list.map(c => c.id === editing ? course : c) : [...list, course];
+  try { new CourseGraph(next); } catch (ex) { $("dlgErr").textContent = ex.message; return; }
+  $("dlg").close();
+  applyCourses(next, editing ? `Updated ${id}.` : `Added ${id}.`);
+});
+$("dlgCancel").onclick = () => $("dlg").close();
+
+/* =====================================================================
+   SELF-TEST
+   ===================================================================== */
+function runSelfTest() {
+  const results = [];
+  const t = (name, fn) => { try { fn(); results.push([name, true]); } catch (e) { results.push([name, false, e.message]); } };
+  const eq = (a, b) => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
+  const small = () => new CourseGraph([
+    { id: "A", name: "A", duration: 2, rating: 4.0, popularity: 10, prerequisites: [] },
+    { id: "B", name: "B", duration: 3, rating: 3.0, popularity: 50, prerequisites: ["A"] },
+    { id: "C", name: "C", duration: 10, rating: 5.0, popularity: 5, prerequisites: ["A"] },
+    { id: "D", name: "D", duration: 4, rating: 4.5, popularity: 20, prerequisites: ["B", "C"] },
+    { id: "E", name: "E", duration: 1, rating: 4.9, popularity: 99, prerequisites: [] }]);
+  t("Min-Heap sorts 500 random numbers", () => {
+    const nums = Array.from({ length: 500 }, () => Math.floor(Math.random() * 2000) - 1000);
+    const h = new MinHeap(x => [x], nums); const out = []; while (h.size) out.push(h.pop());
+    eq(out, [...nums].sort((a, b) => a - b));
+  });
+  t("Min-Heap is stable for equal keys", () => {
+    const h = new MinHeap(x => [x[0]]); [[2, "a"], [1, "b"], [2, "c"], [1, "d"]].forEach(x => h.push(x));
+    eq([h.pop(), h.pop(), h.pop(), h.pop()].map(x => x[1]), ["b", "d", "a", "c"]);
+  });
+  t("Topological order is valid for every priority", () => {
+    const g = small();
+    for (const p of Object.keys(PRIORITIES)) {
+      const pos = new Map(g.topoSort(p).map((c, i) => [c, i]));
+      for (const c of g.ids()) for (const q of g.radj.get(c)) if (pos.get(q) > pos.get(c)) throw new Error(p);
+    }
+  });
+  t("Heap priority respected (rating / popularity)", () => {
+    eq(small().topoSort("rating"), ["E", "A", "C", "B", "D"]);
+    eq(small().topoSort("popularity"), ["E", "A", "B", "C", "D"]);
+  });
+  t("Cycle is rejected", () => {
+    try { small().addPrerequisite("D", "A"); } catch (e) { if (e instanceof CycleError) return; }
+    throw new Error("cycle accepted");
+  });
+  t("DP critical path = A→C→D, 16 h", () => { const r = small().criticalPath(); eq([r.length, r.path], [16, ["A", "C", "D"]]); });
+  t("DP shortest A→D = 9 h, longest = 16 h", () => {
+    const g = small(); eq(g.pathBetween("A", "D").cost, 9); eq(g.pathBetween("A", "D", "longest").cost, 16);
+    eq(g.pathBetween("E", "D").path, []);
+  });
+  t("Goal plan skips completed courses", () => {
+    const p = small().planForGoal("D", "rating", new Set(["A"]));
+    eq([p.order, p.sequential, p.parallel], [["C", "B", "D"], 17, 14]);
+  });
+  t("Recommendations via Min-Heap", () => eq(small().recommendNext(new Set(), 5).map(c => c.id), ["E", "A"]));
+  t("Sample data critical path = 220 h", () => eq(new CourseGraph(SAMPLE).criticalPath().length, 220));
+  const pass = results.filter(r => r[1]).length;
+  $("testOut").innerHTML = `<p><b>${pass} / ${results.length} tests passed</b></p>` + results.map(r =>
+    `<div class="${r[1] ? "pass" : "fail"}">${r[1] ? "✔" : "✘"} ${esc(r[0])}${r[2] ? " - " + esc(r[2]) : ""}</div>`).join("");
+  setStatus(`Self-test: ${pass}/${results.length} passed.`);
+  return pass === results.length;
+}
+
+/* =====================================================================
+   WIRING
+   ===================================================================== */
+for (const sel of ["orderPri", "goalPri", "recPri"])
+  $(sel).innerHTML = Object.keys(PRIORITIES).map(p => `<option>${p}</option>`).join("");
+
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("active", x === b));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.id === b.dataset.tab));
+});
+
+const tbody = $("catalogue").querySelector("tbody");
+tbody.addEventListener("click", e => {
+  if (e.target.dataset.done) {
+    const id = e.target.dataset.done;
+    completed.has(id) ? completed.delete(id) : completed.add(id);
+    const missing = completed.has(id) ? [...graph.ancestors(id)].filter(p => !completed.has(p)) : [];
+    refreshAll(); persist();
+    setStatus(`Progress updated.` + (missing.length ? ` Note: prerequisites not marked done: ${missing.join(", ")}` : ""));
+    return;
+  }
+  const tr = e.target.closest("tr"); if (!tr) return;
+  const id = tr.dataset.id;
+  if (e.ctrlKey || e.metaKey || e.shiftKey) selected.has(id) ? selected.delete(id) : selected.add(id);
+  else selected = new Set([id]);
+  markSelection(); showDetails(id);
+});
+tbody.addEventListener("dblclick", e => { const tr = e.target.closest("tr"); if (tr && !e.target.dataset.done) openDialog(tr.dataset.id); });
+
+$("graph").addEventListener("click", e => {
+  const g = e.target.closest("[data-node]"); if (!g) return;
+  selected = new Set([g.dataset.node]); markSelection(); showDetails(g.dataset.node);
+  const row = tbody.querySelector(`tr[data-id="${CSS.escape(g.dataset.node)}"]`);
+  if (row) row.scrollIntoView({ block: "nearest" });
+});
+function markSelection() {
+  tbody.querySelectorAll("tr").forEach(tr => tr.classList.toggle("sel", selected.has(tr.dataset.id)));
+}
+function showDetails(id) {
+  const c = graph.courses.get(id);
+  setStatus(`${id} - ${c.name}  |  ${fmt(c.duration)} h, rating ${c.rating.toFixed(1)}, ${c.popularity.toLocaleString()} learners, ` +
+    `${completed.has(id) ? "completed" : "not completed"}  |  needs: ${graph.radj.get(id).join(", ") || "none"}  |  unlocks: ${graph.adj.get(id).join(", ") || "none"}`);
+}
+
+$("btnAdd").onclick = () => openDialog();
+$("btnEdit").onclick = () => selected.size ? openDialog([...selected][0]) : alert("Select a course in the catalogue first.");
+$("btnDelete").onclick = () => {
+  if (!selected.size) return alert("Select one or more courses first.");
+  const gone = [...selected];
+  if (!confirm(`Delete ${gone.join(", ")}?\nThey will also be removed from other courses' prerequisites.`)) return;
+  const list = courseListFromGraph().filter(c => !selected.has(c.id))
+    .map(c => ({ ...c, prerequisites: c.prerequisites.filter(p => !selected.has(p)) }));
+  selected.clear(); applyCourses(list, `Deleted ${gone.join(", ")}.`);
+};
+$("btnClear").onclick = () => { completed.clear(); refreshAll(); persist(); setStatus("Progress cleared."); };
+$("btnClearHl").onclick = () => clearHighlight();
+$("btnOrder").onclick = runOrder;
+$("btnCritical").onclick = runCritical;
+$("btnGoal").onclick = runGoal;
+$("btnRoute").onclick = runRoute;
+$("btnRec").onclick = runRec;
+$("btnTest").onclick = runSelfTest;
+
+$("btnSample").onclick = () => {
+  if (!confirm("Replace the current courses with the sample data?")) return;
+  completed.clear(); selected.clear(); applyCourses(SAMPLE, "Sample data loaded.");
+};
+$("btnSave").onclick = () => {
+  const blob = new Blob([JSON.stringify(graph.toJSON(), null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "courses.json";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  setStatus("Saved courses.json to your downloads.");
+};
+$("btnOpen").onclick = () => $("fileInput").click();
+$("fileInput").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const raw = JSON.parse(await f.text());
+    const items = (Array.isArray(raw) ? raw : raw.courses).map(c => ({
+      id: String(c.id).toUpperCase(), name: c.name, duration: +c.duration, rating: +(c.rating || 0),
+      popularity: +(c.popularity || 0), prerequisites: (c.prerequisites || []).map(p => String(p).toUpperCase()) }));
+    completed.clear(); selected.clear();
+    applyCourses(items, `Loaded ${items.length} courses from ${f.name}.`);
+  } catch (ex) { alert("Could not open file:\n" + ex.message); }
+  e.target.value = "";
+};
+
+/* Fixed design: Lava Stone Red + Midnight Black */
+function applyTheme(t) {
+  const root = document.documentElement;
+  MARBLES = MARBLES || MARBLE_DEFS();
+  root.dataset.theme = t; root.dataset.marble = "";
+  root.style.setProperty("--header-img", MARBLES[MARBLE_THEMES[t][0]]);
+  root.style.setProperty("--page-img", MARBLES[MARBLE_THEMES[t][1]]);
+  drawGraph();
+}
+
+restore();
+refreshAll();
+applyTheme("lava");
+</script>
+</body>
+</html>

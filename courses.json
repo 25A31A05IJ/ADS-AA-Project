@@ -1,0 +1,17 @@
+{
+  "courses": [
+    {"id": "CS101", "name": "Intro to Programming",        "duration": 30, "rating": 4.7, "popularity": 15200, "prerequisites": []},
+    {"id": "MATH101", "name": "Discrete Mathematics",      "duration": 25, "rating": 4.2, "popularity": 8100,  "prerequisites": []},
+    {"id": "MATH102", "name": "Linear Algebra",            "duration": 28, "rating": 4.4, "popularity": 7600,  "prerequisites": []},
+    {"id": "CS102", "name": "Object-Oriented Programming", "duration": 20, "rating": 4.5, "popularity": 11000, "prerequisites": ["CS101"]},
+    {"id": "CS201", "name": "Data Structures",             "duration": 35, "rating": 4.8, "popularity": 12500, "prerequisites": ["CS102", "MATH101"]},
+    {"id": "CS202", "name": "Algorithms",                  "duration": 40, "rating": 4.6, "popularity": 9800,  "prerequisites": ["CS201"]},
+    {"id": "STAT201", "name": "Probability & Statistics",  "duration": 26, "rating": 4.1, "popularity": 6900,  "prerequisites": ["MATH101"]},
+    {"id": "DB201", "name": "Databases",                   "duration": 22, "rating": 4.3, "popularity": 8800,  "prerequisites": ["CS102"]},
+    {"id": "WEB201", "name": "Web Development",            "duration": 24, "rating": 4.6, "popularity": 14000, "prerequisites": ["CS102"]},
+    {"id": "ML301", "name": "Machine Learning",            "duration": 45, "rating": 4.9, "popularity": 13300, "prerequisites": ["CS202", "STAT201", "MATH102"]},
+    {"id": "DL401", "name": "Deep Learning",               "duration": 50, "rating": 4.8, "popularity": 10100, "prerequisites": ["ML301"]},
+    {"id": "SE301", "name": "Software Engineering",        "duration": 18, "rating": 4.0, "popularity": 5400,  "prerequisites": ["DB201", "WEB201"]},
+    {"id": "CAP401", "name": "Capstone Project",           "duration": 60, "rating": 4.7, "popularity": 4200,  "prerequisites": ["SE301", "CS202"]}
+  ]
+}
